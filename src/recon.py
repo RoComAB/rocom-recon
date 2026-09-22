@@ -144,7 +144,7 @@ def discover_mdns(network):
     service_types = sorted({r["name"].replace("._services._dns-sd._udp.local", ".local.") for r in collector.records})
     browsers = [browser]
     for service_type in service_types:
-    try:
+        try:
         if not service_type.startswith("_"):
             continue
 
