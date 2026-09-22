@@ -1,0 +1,19 @@
+services:
+  recon:
+    build: .
+    image: ghcr.io/CHANGE_ME/rocom-recon:latest
+    container_name: rocom-recon
+    network_mode: host
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    environment:
+      FORCE_PREFIX: "24"
+      TOP_PORTS: "200"
+      NMAP_TIMING: "T3"
+      TARGET_NETWORK: ""
+      EXCLUDE_IPS: ""
+      OUTPUT_DIR: "/output"
+    volumes:
+      - ./output:/output
+    restart: "no"
