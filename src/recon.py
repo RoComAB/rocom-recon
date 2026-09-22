@@ -62,9 +62,9 @@ def scan_network(local_ip):
 
 
 def empty_device(ip):
-    return {"IP": ip, "Hostname": "", "MAC": "", "Vendor": "", "OS": "", "OpenPorts": "",
+    return {"IP": ip, "Hostname": "", "MAC": "", "Vendor": "", "DeviceType": "","RiskScore": 0, "OS": "", "OpenPorts": "",
             "Services": "", "mDNSNames": "", "mDNSServices": "", "NetBIOSName": "",
-            "NetBIOSWorkgroup": "", "DiscoverySources": set(), "Status": "Up"}
+            "NetBIOSWorkgroup": "", "DiscoverySources": set(), "Status": "Up",}
 
 
 def parse_discovery(xml_path):
@@ -219,9 +219,56 @@ def enrich_nmap(devices, xml_path):
         devices[ip]["Services"] = " | ".join(services)
         devices[ip]["DiscoverySources"].add("Nmap services")
 
+def classify_device(device):
+
+    vendor = device.get("Vendor", "").lower()
+    services = device.get("Services", "").lower()
+
+    device_type = "Unknown"
+
+    if "clavister" in vendor:
+        device_type = "Firewall"
+
+    elif "meraki" in vendor:
+        device_type = "Access Point"
+
+    elif "avaya" in vendor:
+        device_type = "Telephony"
+
+    elif "hp" in vendor and (
+        "ipp" in services or
+        "printer" in services
+    ):
+        device_type = "Printer"
+
+    elif "hewlett" in vendor:
+        device_type = "Switch"
+
+    elif (
+        "microsoft" in services or
+        "windows" in services
+    ):
+        device_type = "Workstation"
+
+    risk = 0
+
+    if "telnet" in services:
+        risk += 50
+
+    if "ftp" in services:
+        risk += 30
+
+    if "smb" in services:
+        risk += 10
+
+    if device_type == "Firewall":
+        risk += 5
+
+    device["DeviceType"] = device_type
+    device["RiskScore"] = risk
 
 def write_csv(devices, path, timestamp, network):
-    fields = ["ScanTime", "Network", "IP", "Hostname", "MAC", "Vendor", "OS", "OpenPorts", "Services",
+    fields = ["ScanTime", "Network", "IP", "Hostname", "MAC", "Vendor", "DeviceType", "RiskScore", "OS", "OpenPorts", "Services",
               "mDNSNames", "mDNSServices", "NetBIOSName", "NetBIOSWorkgroup", "DiscoverySources", "Status"]
     with path.open("w", newline="", encoding="utf-8-sig") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields, delimiter=";")
@@ -277,6 +324,10 @@ def main():
          f"-{TIMING}", "--max-retries", "2", "--host-timeout", "5m", "-iL", str(hosts_file),
          "-oX", str(services_xml), "-oN", str(services_txt)])
     enrich_nmap(devices, services_xml)
+
+    for device in devices.values():
+    classify_device(device)
+    
     write_csv(devices, csv_file, stamp_report, network)
 
     for source, latest in [(csv_file, "latest-recon.csv"), (discovery_xml, "latest-discovery.xml"),
