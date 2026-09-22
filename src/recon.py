@@ -146,18 +146,18 @@ def discover_mdns(network):
     for service_type in service_types:
         try:
             if not service_type.startswith("_"):
-            continue
+                continue
 
-        browsers.append(
-            ServiceBrowser(
-                zc,
-                service_type,
-                collector
+            browsers.append(
+                ServiceBrowser(
+                    zc,
+                    service_type,
+                    collector
+                )
             )
-        )
 
         except Exception:
-        continue
+            continue
     
     time.sleep(max(1, MDNS_SECONDS - 2))
     zc.close()
