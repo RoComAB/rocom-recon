@@ -1,7 +1,7 @@
 services:
   recon:
     build: .
-    image: ghcr.io/CHANGE_ME/rocom-recon:latest
+    image: ghcr.io/rocomab/rocom-recon:latest
     container_name: rocom-recon
     network_mode: host
     cap_add:
@@ -13,6 +13,9 @@ services:
       NMAP_TIMING: "T3"
       TARGET_NETWORK: ""
       EXCLUDE_IPS: ""
+      ENABLE_MDNS: "true"
+      MDNS_SECONDS: "12"
+      ENABLE_NETBIOS: "true"
       OUTPUT_DIR: "/output"
     volumes:
       - ./output:/output
