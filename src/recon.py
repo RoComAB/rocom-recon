@@ -138,10 +138,21 @@ def discover_mdns(network):
     service_types = sorted({r["name"].replace("._services._dns-sd._udp.local", ".local.") for r in collector.records})
     browsers = [browser]
     for service_type in service_types:
-        try:
-            browsers.append(ServiceBrowser(zc, service_type, collector))
-        except Exception:
+    try:
+        if not service_type.startswith("_"):
             continue
+
+        browsers.append(
+            ServiceBrowser(
+                zc,
+                service_type,
+                collector
+            )
+        )
+
+    except Exception:
+        continue
+    
     time.sleep(max(1, MDNS_SECONDS - 2))
     zc.close()
     return collector.records
