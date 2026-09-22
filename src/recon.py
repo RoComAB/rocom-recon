@@ -11,7 +11,7 @@ import time
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
-
+from zeroconf._exceptions import BadTypeInNameException
 from zeroconf import ServiceBrowser, ServiceListener, Zeroconf
 
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "/output"))
@@ -102,7 +102,13 @@ class MDNSCollector(ServiceListener):
         self.add_service(zc, service_type, name)
 
     def add_service(self, zc, service_type, name):
-        info = zc.get_service_info(service_type, name, timeout=2000)
+        try:
+            info = zc.get_service_info(service_type, name, timeout=2000)
+        except BadTypeInNameException:
+            return
+        except Exception:
+            return
+            
         if not info:
             return
         addresses = []
