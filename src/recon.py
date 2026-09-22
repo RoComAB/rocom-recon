@@ -326,7 +326,7 @@ def main():
     enrich_nmap(devices, services_xml)
 
     for device in devices.values():
-    classify_device(device)
+        classify_device(device)
     
     write_csv(devices, csv_file, stamp_report, network)
 
