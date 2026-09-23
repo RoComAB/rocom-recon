@@ -33,66 +33,67 @@ def run(cmd, capture=False, timeout=None):
         raise RuntimeError(message or "Kommandot misslyckades: " + " ".join(cmd))
     return result.stdout.strip() if capture else ""
 
-
 def default_interface():
-    data = run(["ip", "-4", "route", "show", "default"], capture=True)
-    for line in data.splitlines():
-        parts = line.split()
-        if "dev" in parts:
-            return parts[parts.index("dev") + 1]
-    raise RuntimeError("Ingen standardroute hittades")
-
-
-def default_interface():
-
     data = run(
         ["ip", "-4", "route", "show", "default"],
         capture=True
     )
-
     preferred = []
-
     for line in data.splitlines():
-
         parts = line.split()
-
         if "src" not in parts:
             continue
-
         src_ip = parts[parts.index("src") + 1]
-
         try:
             ip = ipaddress.ip_address(src_ip)
-
             if ip.is_private:
                 preferred.append(parts)
-
         except Exception:
             continue
-
     if preferred:
-
         parts = preferred[0]
-
         if "dev" in parts:
             return parts[
                 parts.index("dev") + 1
             ]
-
     for line in data.splitlines():
-
         parts = line.split()
-
         if "dev" in parts:
             return parts[
                 parts.index("dev") + 1
             ]
-
     raise RuntimeError(
         "Ingen standardroute hittades"
     )
 
-
+def interface_ip(interface):
+    data = run(
+        [
+            "ip",
+            "-4",
+            "-o",
+            "addr",
+            "show",
+            "dev",
+            interface,
+            "scope",
+            "global"
+        ],
+        capture=True
+    )
+    for line in data.splitlines():
+        parts = line.split()
+        if "inet" in parts:
+            return (
+                parts[
+                    parts.index("inet") + 1
+                ]
+                .split("/")[0]
+            )
+    raise RuntimeError(
+        f"Ingen IPv4-adress hittades på {interface}"
+    )
+    
 def scan_network(local_ip):
     network = ipaddress.ip_network(TARGET_NETWORK, strict=False) if TARGET_NETWORK else ipaddress.ip_network(f"{local_ip}/{FORCE_PREFIX}", strict=False)
     if not network.is_private:
