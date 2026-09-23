@@ -43,13 +43,54 @@ def default_interface():
     raise RuntimeError("Ingen standardroute hittades")
 
 
-def interface_ip(interface):
-    data = run(["ip", "-4", "-o", "addr", "show", "dev", interface, "scope", "global"], capture=True)
+def default_interface():
+
+    data = run(
+        ["ip", "-4", "route", "show", "default"],
+        capture=True
+    )
+
+    preferred = []
+
     for line in data.splitlines():
+
         parts = line.split()
-        if "inet" in parts:
-            return parts[parts.index("inet") + 1].split("/")[0]
-    raise RuntimeError(f"Ingen IPv4-adress hittades på {interface}")
+
+        if "src" not in parts:
+            continue
+
+        src_ip = parts[parts.index("src") + 1]
+
+        try:
+            ip = ipaddress.ip_address(src_ip)
+
+            if ip.is_private:
+                preferred.append(parts)
+
+        except Exception:
+            continue
+
+    if preferred:
+
+        parts = preferred[0]
+
+        if "dev" in parts:
+            return parts[
+                parts.index("dev") + 1
+            ]
+
+    for line in data.splitlines():
+
+        parts = line.split()
+
+        if "dev" in parts:
+            return parts[
+                parts.index("dev") + 1
+            ]
+
+    raise RuntimeError(
+        "Ingen standardroute hittades"
+    )
 
 
 def scan_network(local_ip):
